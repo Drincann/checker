@@ -23,17 +23,13 @@ function renderErrorInfo(infoMessage) {
       `);
 }
 
-async function queryAndRender(stuid) {
-  try {
-    const result = await axios.get(`/yqfx/search?studentid=${stuid}`);
-    if (/已签到/.test(result?.data ?? '')) {
-      queryBox.append(`<div href="#" class="list-group-item list-group-item-action list-group-item-success">${stuid}<br> ${result?.data}</div>`).slideDown()
-    } else {
-      queryBox.append(`<div href="#" class="list-group-item list-group-item-action list-group-item-danger">${stuid}<br> ${result?.data}</div>`).slideDown()
-    }
-  } catch (error) {
-    queryBox.append(`<div href="#" class="list-group-item list-group-item-action list-group-item-dark">${stuid}<br> 请求出错</div>`)
+async function query(stuid) {
+  const result = await axios.get(`/yqfx/search?studentid=${stuid}`);
+  if (/已签到/.test(result?.data ?? '')) {
+    return { isChecked: true, content: result?.data };
   }
+  return { isChecked: false, content: result?.data };
+
 };
 
 // query action
@@ -44,8 +40,22 @@ queryButton.on('click', async e => {
     });
   }
   try {
-    await Promise.all(queryList.map(stuid => queryAndRender(stuid)))
-  } catch (error) { /* ignore */ }
+    await Promise.all(queryList.map(async stuid => {
+      const queryEle = $(`<div href="#" class="list-group-item list-group-item-action list-group-item-dark">${stuid} </div>`).appendTo(queryBox).slideDown();
+
+      try {
+        const result = await query(stuid);
+        if (result.isChecked) {
+          queryEle.removeClass('list-group-item-dark').addClass('list-group-item-success').html(`${stuid} <br> ${result?.content}`)
+        } else {
+          queryEle.removeClass('list-group-item-dark').addClass('list-group-item-danger').html(`${stuid} <br> ${result?.content}`)
+        }
+      } catch (error) {
+        renderErrorInfo(error.message)
+        queryEle.removeClass('list-group-item-dark').addClass('list-group-item-danger').html(`${stuid} <br> 请求失败`)
+      }
+    }));
+  } catch (error) { renderErrorInfo(error.message) }
 });
 
 // async dropdown render
