@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <div class="container">
+    <div class="row mt-5">
+      <button type="button" class="btn btn-dark col-10" id="queryButton">Query</button>
+    </div>
+    <div class="row mt-5">
+      <div class="col-10">
+        <div class="list-group" id="queryBox">
+          <div href="#" class="list-group-item list-group-item-action"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.21.1/axios.min.js"></script>
+  <script>
+    const queryBox = $('#queryBox');
+    const queryButton = $('#queryButton');
+
+    const queryAndRander = async stuid => {
+      try {
+        const result = await axios.get(`/yqfx/search?studentid=${stuid}`);
+        if (/已签到/.test(result?.data ?? '')) {
+          queryBox.append(`<div href="#" class="list-group-item list-group-item-action list-group-item-success">${stuid}<br> ${result?.data}</div>`).slideDown()
+        } else {
+          queryBox.append(`<div href="#" class="list-group-item list-group-item-action list-group-item-danger">${stuid}<br> ${result?.data}</div>`).slideDown()
+        }
+      } catch (error) {
+        queryBox.append(`<div href="#" class="list-group-item list-group-item-action list-group-item-dark">${stuid}<br> 请求出错</div>`)
+      }
+    };
+
+    queryButton.on('click', async e => {
+      await new Promise((resolve, reject) => {
+        queryBox.children().slideUp(() => resolve(queryBox.html('')));
+      });
+
+      try {
+        await Promise.all(getStuidArr().map(stuid => queryAndRander(stuid)))
+      } catch (error) { /* ignore */ }
+    })
+
+    function getStuidArr() {
+      return [...new Array(30).keys()].map(index => index + 2019984040501).filter(stuid => stuid != 2019984040515 && stuid != 2019984040511 && stuid != 2019984040517 && stuid != 2019984040518);
+    }
+  </script>
+</body>
+
+</html>
