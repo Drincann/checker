@@ -6,6 +6,7 @@ const infoBox = $('#infoBox');
 // actions element
 const classesSwitcher = $('#classesSwitcher');
 const queryButton = $('#queryButton');
+const onlyDisplayNotChecked = $('#onlyDisplayNotChecked');
 
 // list of student id array rendered under "global" scope
 let queryList = [];
@@ -36,26 +37,40 @@ async function query(stuid) {
 queryButton.on('click', async e => {
   if (queryBox.children().length >= 1) {
     await new Promise((resolve, reject) => {
-      queryBox.children().slideUp(() => resolve(queryBox.html('')));
+      queryBox.children().stop().slideUp(() => {
+        queryBox.html('');
+        // resolve at next event loop which render is done
+        setTimeout(resolve, 0);
+      });
     });
   }
   try {
     await Promise.all(queryList.map(async stuid => {
-      const queryEle = $(`<div href="#" class="list-group-item list-group-item-action list-group-item-dark">${stuid} </div>`).appendTo(queryBox).slideDown();
+      const queryEle = $(`<div href="#" class="list-group-item list-group-item-action list-group-item-default">${stuid} </div>`).appendTo(queryBox).stop().slideDown();
 
       try {
         const result = await query(stuid);
         if (result.isChecked) {
-          queryEle.removeClass('list-group-item-dark').addClass('list-group-item-success').html(`${stuid} <br> ${result?.content}`)
+          queryEle.removeClass('list-group-item-default').addClass('list-group-item-success').html(`${stuid} <br> ${result?.content}`)
         } else {
-          queryEle.removeClass('list-group-item-dark').addClass('list-group-item-danger').html(`${stuid} <br> ${result?.content}`)
+          queryEle.removeClass('list-group-item-default').addClass('list-group-item-danger').html(`${stuid} <br> ${result?.content}`)
         }
       } catch (error) {
         renderErrorInfo(error.message)
-        queryEle.removeClass('list-group-item-dark').addClass('list-group-item-danger').html(`${stuid} <br> 请求失败`)
+        queryEle.removeClass('list-group-item-default').addClass('list-group-item-dark').html(`${stuid} <br> 请求失败`)
       }
     }));
+    onlyDisplayNotChecked.trigger('change');
   } catch (error) { renderErrorInfo(error.message) }
+});
+
+// checked action
+onlyDisplayNotChecked.on('change', e => {
+  if (onlyDisplayNotChecked.prop('checked')) {
+    queryBox.children('.list-group-item-success').stop().slideUp();
+  } else {
+    queryBox.children().stop().slideDown();
+  }
 });
 
 // async dropdown render
